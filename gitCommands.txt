@@ -1,0 +1,9 @@
+To check status: $ git status
+
+To add modified files: $ git add -A
+
+To commit local: $ git commit -m "msg"
+
+To push global: $ git push -f
+
+To merge: $ git merge

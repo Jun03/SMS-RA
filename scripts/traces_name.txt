@@ -1,0 +1,3 @@
+605.mcf_s-1554B.champsimtrace.xz   high
+619.lbm_s-3766B.champsimtrace.xz  medium
+649.fotonik3d_s-1B.champsimtrace.xz low
