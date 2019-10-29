@@ -6,26 +6,44 @@ void CACHE::llc_initialize_replacement()
 	for(uint32_t i = 0; i < NUM_CPUS; i++)
 	{
 		cce_count[i] = 0; 
+        ice_count[i] = 0;
+        cce[i]=1;
 	}
 }
 
 // find replacement victim
 uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type)
 {
-    // baseline LRU
-    //return lru_victim(cpu, instr_id, set, current_set, ip, full_addr, type); 
-
 	uint32_t way = 0;
-/*
-    cout << "***Inside llc_find_victim, printing status.***" << endl;
-    cout << "current_core"<<cpu<<endl;
-    for(int i = 0; i < NUM_WAY; i++)
+
+
+    if(llc_epoch_count>10000 && !trained)
     {
-       cout << "For way " <<i<< " valid " <<block[set][i].valid << " and cpu "<<block[set][i].cpu<<"lru position "<<block[set][i].lru  <<endl; 
+        trained = 1;
+        uint32_t high = cce_count[0], position = 0;
+        //outliar detection code
+        for(int i=1; i<NUM_CPUS; i++)
+        {
+            if(cce_count[i]>high)
+            {
+                high = cce_count[i];
+                position = i;
+            }
+        }
+        cce[position] = 0;
+        cout<<"E-id "<<epoch_id<<" cce["<<position<<"] changed"<<endl;
+    }
+    if(llc_epoch_count>100000)
+    {
+        llc_epoch_count = 0;
+        trained = 0;
+        epoch_id++;
+        for(int i=1; i<NUM_CPUS; i++)
+        {
+            cce[i]=1;
+        }
     }
 
-    cout << "***Inside llc_find_victim, done printing status.***" << endl;
-*/
 
     // fill invalid line first
     for (way=0; way<NUM_WAY; way++) {
@@ -41,40 +59,53 @@ uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, c
     }
 
     // LRU victim
-
-	int max = -1;
     if (way == (int)(NUM_WAY)){
-   // cout<<"No invalid line"<<endl;
-	for(way=0; way<NUM_WAY; way++) {
-		if((int)block[set][way].lru > max && block[set][way].cpu == cpu) {
-			max = block[set][way].lru;
-		}
-	}
-	//cout<<"value of max "<<max;
-	//If no block is occupied by the cpu, then pick one randomly.
-	if(max == -1) {
-		max = rand()%NUM_WAY;
-		//cce_count[cpu]++;
-		//cross core eviction will occur, so counter is incremented
-	}
-	/*else
-	{
-		ice_count[cpu]++;
-		//in core eviction will occur
-	}*/
+        if(!cce[cpu])
+        {
+            int max = -1;
+            
+                for(way=0; way<NUM_WAY; way++) {
+                    if((int)block[set][way].lru > max && block[set][way].cpu == cpu) {
+                        max = block[set][way].lru;
+                    }
+                }
+                //If no block is occupied by the cpu, then pick one randomly.
+                if(max == -1) {
+                    max = rand()%NUM_WAY;
+                }  
 
-        for (way=0; way<NUM_WAY; way++) {
-            if (block[set][way].lru == max) {
+                for (way=0; way<NUM_WAY; way++) {
+                    if (block[set][way].lru == max) {
 
-                DP ( if (warmup_complete[cpu]) {
-                cout << "[" << NAME << "] " << __func__ << " instr_id: " << instr_id << " replace set: " << set << " way: " << way;
-                cout << hex << " address: " << (full_addr>>LOG2_BLOCK_SIZE) << " victim address: " << block[set][way].address << " data: " << block[set][way].data;
-                cout << dec << " lru: " << block[set][way].lru << endl; });
+                        DP ( if (warmup_complete[cpu]) {
+                        cout << "[" << NAME << "] " << __func__ << " instr_id: " << instr_id << " replace set: " << set << " way: " << way;
+                        cout << hex << " address: " << (full_addr>>LOG2_BLOCK_SIZE) << " victim address: " << block[set][way].address << " data: " << block[set][way].data;
+                        cout << dec << " lru: " << block[set][way].lru << endl; });
 
-                break;
+                        break;
+                    }
+                }
+        }
+        else if(cce[cpu])
+        {
+            //cout<<"no invalid line"<<endl;
+            for (way=0; way<NUM_WAY; way++) {
+                if (block[set][way].lru == NUM_WAY-1) {
+
+                    DP ( if (warmup_complete[cpu]) {
+                    cout << "[" << NAME << "] " << __func__ << " instr_id: " << instr_id << " replace set: " << set << " way: " << way;
+                    cout << hex << " address: " << (full_addr>>LOG2_BLOCK_SIZE) << " victim address: " << block[set][way].address << " data: " << block[set][way].data;
+                    cout << dec << " lru: " << block[set][way].lru << endl; });
+
+                    break;
+                }
             }
+
         }
     }
+
+
+
 
     if (way == NUM_WAY) {
         cerr << "[" << NAME << "] " << __func__ << " no victim! set: " << set << endl;

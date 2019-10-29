@@ -118,9 +118,16 @@ void CACHE::handle_fill()
             else
                 update_replacement_state(fill_cpu, set, way, MSHR.entry[mshr_index].full_addr, MSHR.entry[mshr_index].ip, 0, MSHR.entry[mshr_index].type, 0);
 
+
+
             // COLLECT STATS
             sim_miss[fill_cpu][MSHR.entry[mshr_index].type]++;
             sim_access[fill_cpu][MSHR.entry[mshr_index].type]++;
+            if(cache_type == IS_LLC)
+            {
+                llc_epoch_count++;
+                 
+            }
 
             // check fill level
             if (MSHR.entry[mshr_index].fill_level < fill_level) {
@@ -257,6 +264,11 @@ void CACHE::handle_fill()
             // COLLECT STATS
             sim_miss[fill_cpu][MSHR.entry[mshr_index].type]++;
             sim_access[fill_cpu][MSHR.entry[mshr_index].type]++;
+            if(cache_type == IS_LLC)
+            {
+                llc_epoch_count++;
+                 
+            }
 
             if (cache_type == IS_LLC)
             {
@@ -344,6 +356,12 @@ void CACHE::handle_writeback()
             // COLLECT STATS
             sim_hit[writeback_cpu][WQ.entry[index].type]++;
             sim_access[writeback_cpu][WQ.entry[index].type]++;
+
+            if(cache_type == IS_LLC)
+            {
+                llc_epoch_count++;
+                 
+            }
 
             // mark dirty
             block[set][way].dirty = 1;
@@ -612,6 +630,10 @@ void CACHE::handle_writeback()
                     // COLLECT STATS
                     sim_miss[writeback_cpu][WQ.entry[index].type]++;
                     sim_access[writeback_cpu][WQ.entry[index].type]++;
+                    if(cache_type == IS_LLC)
+                    {
+                        llc_epoch_count++;
+                    }
 
 
 					if (cache_type == IS_LLC)
@@ -718,6 +740,11 @@ void CACHE::handle_read()
                 // COLLECT STATS
                 sim_hit[read_cpu][RQ.entry[index].type]++;
                 sim_access[read_cpu][RQ.entry[index].type]++;
+                if(cache_type == IS_LLC)
+                {
+                    llc_epoch_count++;
+                     
+                }
 
                 // check fill level
                 if (RQ.entry[index].fill_level < fill_level) {
@@ -941,6 +968,12 @@ void CACHE::handle_prefetch()
                 // COLLECT STATS
                 sim_hit[prefetch_cpu][PQ.entry[index].type]++;
                 sim_access[prefetch_cpu][PQ.entry[index].type]++;
+
+                if(cache_type == IS_LLC)
+                {
+                    llc_epoch_count++;
+                     
+                }
 
 		// run prefetcher on prefetches from higher caches
 		if(PQ.entry[index].pf_origin_level < fill_level)

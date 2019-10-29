@@ -153,6 +153,9 @@ void reset_cache_stats(uint32_t cpu, CACHE *cache)
 
     cache->ice_count[cpu] = 0;
     cache->cce_count[cpu] = 0;
+    cache->cce[cpu] = 1;
+    cache->llc_epoch_count = 0;
+    cache->trained = 0;
 
     cache->RQ.ACCESS = 0;
     cache->RQ.MERGED = 0;

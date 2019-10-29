@@ -8,7 +8,7 @@
 #else
 #define STAT_PRINTING_PERIOD 10000000
 #endif
-#define DEADLOCK_CYCLE 1000000000	//Multiplied with 1000
+#define DEADLOCK_CYCLE 1000000
 
 using namespace std;
 
