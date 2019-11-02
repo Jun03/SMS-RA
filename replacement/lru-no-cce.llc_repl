@@ -17,24 +17,85 @@ uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, c
 	uint32_t way = 0;
 
 
-    if(llc_epoch_count>10000 && !trained)
+    if(llc_epoch_count> (LLC_SET*LLC_WAY)/8 && !trained)
     {
+    	cout<<"In training"<<endl;
+    	uint64_t sorted[NUM_CPUS];
+    	for(int i = 0; i<NUM_CPUS; i++)
+    	{
+    		sorted[i]=cce_count[i];
+    	}
         trained = 1;
-        uint32_t high = cce_count[0], position = 0;
-        //outliar detection code
-        for(int i=1; i<NUM_CPUS; i++)
-        {
-            if(cce_count[i]>high)
+        int outlierFlag=0, cceToAccessRatioFlag=0;
+        double median,q1,q3,iqr,lif,uif,lof,uof;
+        
+      //   for (int i = 0; i < NUM_CPUS-1; i++)      
+    		// for (int j = 0; j < NUM_CPUS-i-1; j++)  
+      //   	if (sorted[j] > sorted[j+1])  
+      //       {
+      //       	temp = sorted[j];
+      //       	sorted[j] = sorted[j+1];
+      //       	sorted[j+1]=temp;
+      //       }
+
+        std::sort(sorted,sorted+NUM_CPUS);
+        cout<<"after sorting"<<endl;
+        median = (sorted[(NUM_CPUS/2)-1]+sorted[(NUM_CPUS/2)])/2;
+        cout<<"0"<<endl;
+        q1 = (sorted[(NUM_CPUS/4)-1]+sorted[(NUM_CPUS/4)])/2;
+        cout<<"1"<<endl;
+        q3 = (sorted[NUM_CPUS-((NUM_CPUS/4)-1)-1]+sorted[NUM_CPUS-(NUM_CPUS/4)-1])/2;
+        cout<<"2"<<endl;
+        iqr = (q3-q1)/8;
+        cout<<"3"<<endl;
+        uif = q3 + (iqr);
+        lif = q1 - (iqr);
+        uof = q3 + (iqr);
+        lof = q1 - (iqr*1.5);
+        cout<<"4"<<endl;
+        for(int i = 0; i<NUM_CPUS; i++)
+        {   
+            if(sorted[i] >uif && sorted[i] > uof)
             {
-                high = cce_count[i];
-                position = i;
+            	cout<<"outlier detected"<<endl;
+            	for(int j = 0; j<NUM_CPUS; j++)
+            	{
+            		if(cce_count[j] == sorted[i])
+            		{
+            			cout<<"finding index"<<endl;
+            			cce[i]=0;
+                		outlierFlag = 1;
+                		cout<<"E-id "<<epoch_id<<" Algo, CCE Stopped C-"<<i<<endl;
+            		}
+            	}
+                
             }
         }
-        cce[position] = 0;
-        cout<<"E-id "<<epoch_id<<" cce["<<position<<"] changed"<<endl;
+        if(outlierFlag == 0)
+        {
+        	cout<<"No outlier"<<endl;
+            for(int i = 0; i < NUM_CPUS; i++)
+            {
+            	cout<<"cce -"<<cce_count[i]<<", ice-"<<ice_count[i]<<endl;
+            	cout<<"ratio"<<(float)cce_count[i]/(float)(cce_count[i]+ice_count[i]+1)<<endl;
+            	if((float)cce_count[i]/(float)(cce_count[i]+ice_count[i]+1) > 0.7)
+            	{
+            		cce[i]=0;
+                	cceToAccessRatioFlag = 1;
+                	cout<<"E-id "<<epoch_id<<" Ratio, CCE Stopped C-"<<i<<endl;
+            	}
+            }
+        }
+        if(outlierFlag == 0 && cceToAccessRatioFlag == 0)
+        {
+        	printf("\n There is no outlier\n");	
+        }
+        //cout<<"E-id "<<epoch_id<<" cce["<<position<<"] changed"<<endl;
     }
-    if(llc_epoch_count>100000)
+    //
+    if(llc_epoch_count> (LLC_SET*LLC_WAY)/2)
     {
+    	cout<<"After epoch completed"<<endl;
         llc_epoch_count = 0;
         trained = 0;
         epoch_id++;

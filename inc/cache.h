@@ -2,6 +2,7 @@
 #define CACHE_H
 
 #include "memory_class.h"
+#include<algorithm>
 
 // PAGE
 extern uint32_t PAGE_TABLE_LATENCY, SWAP_LATENCY;

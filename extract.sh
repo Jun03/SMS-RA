@@ -1,5 +1,5 @@
- a=$(ls | tail -n 48)
- i=0
+a=$(ls | tail -n 48)
+i=0
 for x in $a
 do
 	i=`expr $i + 1`
